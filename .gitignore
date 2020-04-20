@@ -1,1 +1,10 @@
+# Mac trash files
+.DS_Store
+*/.DS_Store
+# History files
+.Rhistory
+# Session Data files
+.RData
+# RStudio files
+.Rproj.user/
 .Rproj.user
