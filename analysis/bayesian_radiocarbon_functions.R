@@ -209,10 +209,49 @@ sample_gm <- function(hp) {
   return(ths)
 }
 
-# bd_Null <- function(M,tol=1e-07) {
-#  tmp <- qr(M)
-#  set <- if (tmp$rank == 0L)
-#    seq_len(ncol(M))
-#  else -seq_len(tmp$rank)
-#  qr.Q(tmp, complete = TRUE)[, set, drop = FALSE]
-# }
+# Sometimes ygrid is intended to be evenly spaced but, numerically, not quite
+# so due to rounding issues. To align calculations with the assumption in the
+# manuscript of evenly spaced tau-grids for the Riemann integration, use this
+# measurement matrix function, which unlike bd_calc_meas_matrix does not check
+# whether the grid is regularly spaced.
+calc_meas_matrix2 <- function(tau, phi_m, sig_m, calibDf, addCalibUnc = T) {
+  # 	# tau is in AD
+  #        if(!all(is.na(phiLim))) {
+  #            phiMin <- phiLim[1]
+  #            phiMax <- phiLim[2]
+  # 	}
+
+
+
+  # tau is in AD
+  tau_BP <- 1950 - tau
+
+  # extract the calibration curve variables and convert to fraction modern
+  tau_curve <- rev(calibDf$yearBP)
+  mu_c_curve <- exp(-rev(calibDf$uncalYearBP) / 8033)
+  sig_c_curve <- rev(calibDf$uncalYearBPError) * mu_c_curve / 8033
+
+  # Interpolate curves at tau_BP to yield mu_c and sig_c
+  mu_c <- stats::approx(tau_curve, mu_c_curve, tau_BP)
+  mu_c <- mu_c$y
+  sig_c <- stats::approx(tau_curve, sig_c_curve, tau_BP)
+  sig_c <- sig_c$y
+
+  PHI_m <- replicate(length(tau_BP), phi_m)
+  SIG_m <- replicate(length(tau_BP), sig_m)
+
+  MU_c <- t(replicate(length(phi_m), mu_c))
+  if (addCalibUnc) {
+    SIG_c <- t(replicate(length(sig_m), sig_c))
+    SIG_sq <- SIG_m^2 + SIG_c^2
+  } else {
+    SIG_sq <- SIG_m^2
+  }
+
+  M <- exp(-(PHI_m - MU_c)^2 / (SIG_sq) / 2) / sqrt(SIG_sq) / sqrt(2 * pi)
+
+  # Multiply by the the integration width
+  dtau <- tau[2] - tau[1]
+  M <- M * dtau
+  return(M)
+}
