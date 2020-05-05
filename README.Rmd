@@ -31,38 +31,126 @@ Please cite this compendium as:
 
 > Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (`r format(Sys.Date(), "%Y")`). _Compendium of R code and data for `r Title`_. Accessed `r format(Sys.Date(), "%d %b %Y")`.
 
-## Contents
 
-The **analysis** directory contains:
+## Getting the code and input data
+The easiest way to get the code and input data is to clone this github repository. For example, enter the following at the command line to clone the repository, enter the newly-created directory, and list its contents:
 
-  - Scripts for performing the analysis
-  - [:file\_folder: data-raw](/analysis/data-raw): Raw data used in the analysis.
-  - [:file\_folder: data-derived](/analysis/data-derived): Data output of the analysis.
-  - [:file\_folder: figures](/analysis/figures): Plots and other
-    illustrations
+```console
+git clone https://github.com/eehh-stanford/price2020
+cd price2020
+ls
+```
 
-## How to run in your broswer or download and run locally
+## Requirements
+This research compendium has been developed using the statistical
+programming language R. To work with the compendium, you will need
+the [R
+software](https://cloud.r-project.org/) itself and optionally [RStudio
+Desktop](https://rstudio.com/products/rstudio/download/).
 
-This research compendium has been developed using the statistical programming
-language R. To work with the compendium, you will need
-installed on your computer the [R software](https://cloud.r-project.org/)
-itself and optionally [RStudio Desktop](https://rstudio.com/products/rstudio/download/).
 
-The [:file_folder: analysis](/analysis) directory contains the code, data, and output for Price et al. 2020. 
+To install the R packages that the code depends on enter the following in *R*:
 
-To re-create the analysis, clone this repository, change directories to it, and please run the following in *R*:
 ``` r
 # install.packages("devtools")
 devtools::install()
-
-library("price2020")
-
-list.files("analysis", 
-           full.names = TRUE, 
-           pattern = "FINAL") %>%
-           purrr::walk(source)
-
 ```
+
+Among other things, this installs the following package:
+
+[https://github.com/eehh-stanford/baydem](https://github.com/eehh-stanford/baydem)
+
+This also installs Rstan, which may have further depenencies. If so, see:
+
+[https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started)
+
+## Contents
+
+Input data files:  
+  &nbsp;&nbsp;MesoRAD-v.1.1_FINAL_no_locations.xlsx  
+  &nbsp;&nbsp;Tikal_Demography.xlsx  
+  
+R files:  
+  &nbsp;&nbsp;bayesian_radiocarbon_functions.R  
+  &nbsp;&nbsp;create_identif_results_exp.R  
+  &nbsp;&nbsp;create_identif_results_gm.R  
+  &nbsp;&nbsp;do_maya_inference.R  
+  &nbsp;&nbsp;do_sim_inference.R  
+
+The remaining files are for the README and R package.
+
+
+# Running the analyses
+## Simulation
+If necessary, set the R working directory to the directory with the files (e.g., using setwd). Then type the following in R:
+
+``` r
+source('do_sim_inference.R')
+```
+
+This should take a few hours to finish. Once complete, the following new files are created:  
+  &nbsp;&nbsp;sim_inference.rds  
+  &nbsp;&nbsp;Fig1_sim_inference.pdf  
+
+sim_inference.rds stores the results of the Bayesian inference for N=10, 100, 1000,and 10000 simulated radiocarbon samples and two choices for the paramaterization of the prior (a total of eight cases). Fig1_sim_inference.pdf is Figure 1 in the article.
+
+
+## Maya results
+If necessary, set the R working directory to the directory with the files (e.g., using setwd). Then type the following in R:
+
+``` r
+source('do_maya_inference.R')
+```
+
+This should take about two days to finish. Once complete, the following new files are created:  
+  &nbsp;&nbsp;log_mesorad_hygiene_counts.csv  
+  &nbsp;&nbsp;mesorad_filtered.csv  
+  &nbsp;&nbsp;log_mesorad_filtered_site_counts.csv  
+  &nbsp;&nbsp;mesorad_combined.csv  
+  &nbsp;&nbsp;mesorad_final.csv  
+  &nbsp;&nbsp;maya_inference_K2_tik.rds  
+  &nbsp;&nbsp;maya_inference_K4_tik.rds  
+  &nbsp;&nbsp;maya_inference_K6_tik.rds  
+  &nbsp;&nbsp;maya_inference_K8_tik.rds  
+  &nbsp;&nbsp;maya_inference_K10_tik.rds  
+  &nbsp;&nbsp;maya_inference_K2_all.rds  
+  &nbsp;&nbsp;maya_inference_K4_all.rds  
+  &nbsp;&nbsp;maya_inference_K6_all.rds  
+  &nbsp;&nbsp;maya_inference_K8_all.rds  
+  &nbsp;&nbsp;maya_inference_K10_all.rds  
+  &nbsp;&nbsp;Fig2_maya_inference_K10.pdf  
+  &nbsp;&nbsp;Fig3_tikal_prev_expert_comparison.pdf  
+  &nbsp;&nbsp;Fig4_maya_inference_rate_K10.pdf  
+  &nbsp;&nbsp;Fig5_maya_histograms.pdf  
+  &nbsp;&nbsp;FigS3_maya_inference_Kall.pdf  
+  &nbsp;&nbsp;FigS4_maya_inference_K2_and_K10_with_rc_curve.pdf  
+  &nbsp;&nbsp;supp_count_data.csv  
+
+The first set of files provides the Mesorad data at various stages of processing. The second set of files (maya_inference_K) provides the inference results for Tikal/All sites with K=2 to 10 numbers of mixtures components. The third set of files is the figures and count data for the main manuscript and supplement.
+
+## Identifiability results (supplement)
+If necessary, set the R working directory to the directory with the files (e.g., using setwd). There are two scripts to run, one for the exponential example and one for the Gaussian mixture example. For the exponential example type:
+
+``` r
+source('create_identif_results_exp.R')
+```
+
+This should take only a few minutes to run. Once complete, the following new files are created:  
+  &nbsp;&nbsp;FigS1_exp_example.pdf  
+  &nbsp;&nbsp;SuppB_exp.csv  
+
+FigS1_exp_example.pdf is Figure S1 in the supplement. SuppB_exp.csv provides summary information for the example, notably the mean measurement uncertainties reported in the supplement.
+
+For the Gaussian mixture example type:
+
+``` r
+source('create_identif_results_gm.R')
+```
+
+This will take a few hours to run. Once complete, the following new file is created:  
+  &nbsp;&nbsp;FigS2_gm_example.pdf  
+
+FigS1_exp_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
 
 ### Licenses
 

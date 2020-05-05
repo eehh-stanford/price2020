@@ -2,6 +2,9 @@ rm(list = ls())
 
 library(baydem)
 library(magrittr)
+library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
 # # Here, we load the MesoRAD version 1.1 data, archived on
 # # tDAR at DOI https://doi.org/10.6067/XCV8455306.
@@ -30,11 +33,11 @@ set.seed(276368)
 
 # Begin generation of mesorad combined data (if neceesary)
 # Whitespace not updated
-if (!file.exists(here::here("analysis/data-derived/mesorad_combined.csv"))) {
+if (!file.exists(here::here("mesorad_combined.csv"))) {
 
   # Read the location-less data
   mesorad <-
-    here::here("analysis/data-raw/MesoRAD-v.1.1_FINAL_no_locations.xlsx") %>%
+    here::here("MesoRAD-v.1.1_FINAL_no_locations.xlsx") %>%
     readxl::read_excel(sheet = "MesoRAD v 1.1. Dates")
 
   hygKeep <- c(
@@ -94,7 +97,7 @@ if (!file.exists(here::here("analysis/data-derived/mesorad_combined.csv"))) {
     dplyr::group_by(`Chronometric Hygiene/ Issues with Dates`) %>%
     dplyr::count() %>%
     dplyr::arrange(-n) %>%
-    readr::write_csv(here::here("analysis/data-derived/log_mesorad_hygiene_counts.csv"))
+    readr::write_csv(here::here("log_mesorad_hygiene_counts.csv"))
 
   mesorad %<>%
     dplyr::filter(`Chronometric Hygiene/ Issues with Dates` %in% hygKeep) %>%
@@ -119,7 +122,7 @@ if (!file.exists(here::here("analysis/data-derived/mesorad_combined.csv"))) {
         `Duplicate/Replicate`
         )
     ) %T>%
-    readr::write_csv(here::here("analysis/data-derived/mesorad_filtered.csv")) %>%
+    readr::write_csv(here::here("mesorad_filtered.csv")) %>%
     dplyr::select(
       Site,
       `Age BP` = `Conventional 14C age (BP)`,
@@ -139,7 +142,7 @@ if (!file.exists(here::here("analysis/data-derived/mesorad_combined.csv"))) {
       `N. dates with replicates combined` = sum(no_replicates)
     ) %>%
     dplyr::arrange(-`N. dates`) %T>%
-    readr::write_csv(here::here("analysis/data-derived/log_mesorad_filtered_site_counts.csv")) %>%
+    readr::write_csv(here::here("log_mesorad_filtered_site_counts.csv")) %>%
     dplyr::ungroup() %>%
     dplyr::select(-Site) %>%
     dplyr::summarise_all(sum)
@@ -180,12 +183,12 @@ if (!file.exists(here::here("analysis/data-derived/mesorad_combined.csv"))) {
     dplyr::bind_rows(combined_mesorad) %>%
     dplyr::arrange(Site, `Age BP`) %>%
     dplyr::select(-`Duplicate/Replicate`) %T>%
-    readr::write_csv(here::here("analysis/data-derived/mesorad_combined.csv"))
+    readr::write_csv(here::here("mesorad_combined.csv"))
 } # End generation of mesorad combined data (if necessary)
 
 
 mesorad <-
-  here::here("analysis/data-derived/mesorad_combined.csv") %>%
+  here::here("mesorad_combined.csv") %>%
   readr::read_csv()
 
 runlog <- list()
@@ -197,7 +200,7 @@ mesorad %<>%
     `Age BP` <= 2850,
     `Age BP` >= 200
   ) %T>%
-  readr::write_csv(here::here("analysis/data-derived/mesorad_final.csv"))
+  readr::write_csv(here::here("mesorad_final.csv"))
 
 runlog$`Reduced Sample Size` <- nrow(mesorad)
 runlog$`Tikal Sample Size` <- mesorad %>%
@@ -216,192 +219,134 @@ mesorad %<>%
 # (1) Generate the problem
 # (2) Do the Bayesian sampling
 # (3) Run some standard analyses
-out_file <- here::here("analysis/data-derived/maya_inference.rds")
-if (file.exists(out_file)) {
-  maya_inference <-
-    readr::read_rds(out_file)
-} else {
-  library(rstan)
-  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores())
+#
+# Since the inference may take about two days, save the result of each of the
+# eight runs to file and only do the inference if the file is missing. The
+# ten runs are:
+#	K	Site(s)
+#	2	Tikal
+#	4	Tikal
+#	6	Tikal
+#	8	Tikal
+#	10	Tikal
+#	2	All
+#	4	All
+#	6	All
+#	8	All
+#	10	All
 
-  # Specify the baseline hyperparameters. K is changed for different runs
-  hp <-
-    list(
-      # Class of fit (Gaussian mixture)
-      fitType = "gaussmix",
-      # Parameter for the dirichlet draw of the mixture probabilities
-      alpha_d = 1,
-      # The gamma distribution shape parameter for sigma
-      alpha_s = 10,
-      # The gamma distribution rate parameter for sigma, yielding a mode of 500
-      alpha_r = (10 - 1) / 500,
-      # Minimum calendar date (years AD)
-      taumin = -1100,
-      # Maximum calendar date (years AD)
-      taumax = 1900,
-      # Spacing for the measurement matrix (years)
-      dtau = 1,
-      # # Do the inference for K=6
-      # K = 6
-      # Do the inference for K=4, K=6, K=8, and K=10
-      K = c(4, 6, 8, 10)
-    ) %>%
-    purrr::cross()
+# Specify the baseline hyperparameters. K is changed for different runs
+hp0 <-
+  list(
+    # Class of fit (Gaussian mixture)
+    fitType = "gaussmix",
+    # Parameter for the dirichlet draw of the mixture probabilities
+    alpha_d = 1,
+    # The gamma distribution shape parameter for sigma
+    alpha_s = 10,
+    # The gamma distribution rate parameter for sigma, yielding a mode of 500
+    alpha_r = (10 - 1) / 500,
+    # Minimum calendar date (years AD)
+    taumin = -1100,
+    # Maximum calendar date (years AD)
+    taumax = 1900,
+    # Spacing for the measurement matrix (years)
+    dtau = 1
+    # K is set to 2, 4, 6, 8, and 10 below
+  )
 
-  maya_inference <-
-    mesorad %>%
-    list(
-      `All Sites` = .,
-      `Tikal` = dplyr::filter(., Site == "Tikal")
-    ) %>%
-    purrr::cross2(hp) %>%
-    purrr::map(function(x) {
-      x %<>%
-        magrittr::set_names(c("dates", "hp"))
+# The calibration dataframe
+calibDf = baydem::bd_load_calib_curve("intcal13")
 
-      x
-    }) %>%
-    purrr::map(
-      function(x) {
-        prob <-
-          list(
-            phi_m = x$dates$phi_m,
-            sig_m = x$dates$sig_m,
-            hp = x$hp,
-            calibDf = baydem::bd_load_calib_curve("intcal13"),
-            # Define the control parameters for the call to Stan. Use 4500 total MCMC
-            # samples, of which 2000 are warmup samples. Since four chains are used, this
-            # yields 4*(4500-2000) = 10,000 total samples.
-            control = list(
-              numChains = 4,
-              sampsPerChain = 4500,
-              warmup = 2000
-            )
-          )
+# Define the control parameters for the call to Stan. Use 4500 total MCMC
+# samples, of which 2000 are warmup samples. Since four chains are used, this
+# yields 4*(4500-2000) = 10,000 total samples.
+control0 = list(numChains = 4,sampsPerChain = 4500,warmup = 2000)
 
-        soln <-
-          baydem::bd_do_inference(prob)
 
-        anal <-
-          baydem::bd_analyze_soln(soln)
 
-        x$output <-
-          tibble::lst(
-            prob,
-            soln,
-            anal
-          )
+# To make runs reproducible, use the following random number seeds:
+initSeed <- c(361591,403927,688927,  2917,204987,  86685,168649,132214,904995,328517)
+stanSeed <- c(807472,264408,406443,778875, 57096, 257668,739622,726159,406443,605221)
 
-        return(x)
+# Iterate over number of mixtures
+Kvect <- seq(2,10,by=2)
+regions <- c('tik','all')
+# Create a results list to store the problem, solution, and analysis
+results <- list()
+for(i in 1:length(Kvect)) {
+  K <- Kvect[i]
+  # Create the hyperparameter list, setting K
+  hp <- hp0
+  hp$K <- K
+  # Iterate over regions
+  for(j in 1:length(regions)) {
+    runIndex <- i + (j-1)*length(Kvect)
+    reg <- regions[j]
+    fileName <- paste0('maya_inference_K',K,'_',reg,'.rds')
+    if(!file.exists(fileName)) {
+      # Do the inference
+      # Create a sub-setting vector, ind (keep everything for all)
+      if(reg == 'tik') {
+        ind <- which(mesorad$Site == 'Tikal')
+      } else {
+        ind <- 1:nrow(mesorad)
       }
-    ) %T>%
-    readr::write_rds(out_file,
-      compress = "gz"
-    )
+      # Set random number seeds in control
+      control = control0
+      control$initSeed <- initSeed[runIndex]
+      control$stanSeed <- stanSeed[runIndex]
+      # Create the list specifying the problem
+      prob <- list(
+                phi_m = mesorad$phi_m[ind],
+                sig_m = mesorad$sig_m[ind],
+                hp = hp,
+                calibDf = calibDf,
+                control = control
+                )
+
+      soln <- baydem::bd_do_inference(prob)
+      anal <- baydem::bd_analyze_soln(soln)
+      results[[runIndex]] <- list(prob=prob,soln=soln,anal=anal)
+      readr::write_rds(results[[i + (j-1)*length(Kvect)]],fileName,compress='gz')
+    } else {
+      results[[i + (j-1)*length(Kvect)]] <- readr::read_rds(fileName)
+    }
+  }
 }
 
-maya_inference <-
-  readr::read_rds(out_file) %>%
-  purrr::map_dfr(function(x) {
-    tibble::tibble(
-      dates = list(x$dates),
-      hp = list(x$hp %>%
-        tibble::as_tibble()),
-      output = list(x$output)
-    )
-  }) %>%
-  dplyr::mutate(dataset = rep(c("All Sites", "Tikal"), length(maya_inference) / 2)) %>%
-  dplyr::select(dataset, dplyr::everything()) %>%
-  dplyr::arrange(dataset)
-
-maya_inference %>%
-  tidyr::unnest(hp) %>%
-  dplyr::rowwise() %>%
-  dplyr::mutate(n = nrow(dates)) %>%
-  dplyr::select(-dates, -output) %>%
-  dplyr::select(dataset, n, dplyr::everything()) %T>%
-  readr::write_csv(here::here("analysis/data-derived/log_maya_inference.csv"))
+# Double check the run consistency by checking the random number seeds
+for(i in 1:length(Kvect)) {
+  K <- Kvect[i]
+  for(j in 1:length(regions)) {
+    runIndex <- i + (j-1)*length(Kvect)
+    reg <- regions[j]
+    fileName <- paste0('maya_inference_K',K,'_',reg,'.rds')
+    if(results[[runIndex]]$prob$control$initSeed != initSeed[runIndex]) {
+      stop('Problem with run consistency for initSeed')
+    }
+    if(results[[runIndex]]$prob$control$stanSeed != stanSeed[runIndex]) {
+      stop('Problem with run consistency for stanSeed')
+    }
+  }
+}
 
 library(ggplot2)
 
-# maya_output <-
-#   maya_inference %>%
-#   tidyr::unnest(hp) %>%
-#   dplyr::mutate(simple_out = output %>%
-#     purrr::map(function(x) {
-#       x$anal$Qdens %>%
-#         t() %>%
-#         magrittr::set_colnames(x$anal$probs) %>%
-#         tibble::as_tibble() %>%
-#         dplyr::mutate(
-#           `Year (BC/AD)` = x$anal$tau,
-#           `SPD` = x$anal$f_spdf
-#         )
-#     })) %>%
-#   dplyr::select(dataset, K, simple_out) %>%
-#   tidyr::unnest(simple_out) %>%
-#   dplyr::mutate(
-#     K = factor(K),
-#     dataset = factor(dataset)
-#   )
-#
-# maya_output %>%
-#   ggplot(aes(
-#     x = `Year (BC/AD)`,
-#     color = K,
-#     fill = K
-#   )) +
-#   geom_ribbon(aes(
-#     ymin = `0.025`,
-#     ymax = `0.975`
-#   ),
-#   alpha = 0.25,
-#   colour = NA
-#   ) +
-#   geom_line(aes(y = `0.5`)) +
-#   facet_grid(
-#     rows = vars(K),
-#     cols = vars(dataset)
-#   ) +
-#   ylab("Density")
-#
-# ggsave("./figures/maya_inference_grid.pdf",
-#   width = 8,
-#   height = 10
-# )
-#
-#
-# maya_output %>%
-#   ggplot(aes(
-#     x = `Year (BC/AD)`,
-#     color = K,
-#     fill = K
-#   )) +
-#   geom_ribbon(aes(
-#     ymin = `0.025`,
-#     ymax = `0.975`
-#   ),
-#   alpha = 0.25,
-#   colour = NA
-#   ) +
-#   geom_line(aes(y = `0.5`)) +
-#   facet_wrap("dataset",
-#     nrow = 2
-#   ) +
-#   ylab("Density")
-#
-# ggsave("./figures/maya_inference_wrap.pdf",
-#   width = 8,
-#   height = 10
-# )
-
-
-
-
+# Extract named "runs" from results list for code readability
+out_tik_K2  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==2  && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
+out_tik_K4  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==4  && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
+out_tik_K6  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==6  && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
+out_tik_K8  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==8  && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
+out_tik_K10 <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==10 && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
+out_all_K2  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==2  && length(x$prob$phi_m)==nrow(mesorad)})))]]
+out_all_K4  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==4  && length(x$prob$phi_m)==nrow(mesorad)})))]]
+out_all_K6  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==6  && length(x$prob$phi_m)==nrow(mesorad)})))]]
+out_all_K8  <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==8  && length(x$prob$phi_m)==nrow(mesorad)})))]]
+out_all_K10 <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==10 && length(x$prob$phi_m)==nrow(mesorad)})))]]
 ### FIGURE 5: Maya histograms
 
-# Using the run with K=6 mixtures, generate three stacked histogram plots in
+# Using the run with K=10 mixtures, generate three stacked histogram plots in
 # one figure. The underlying data for the histograms comes from each Bayesian
 # sample.
 #
@@ -414,29 +359,7 @@ latePreClassic <- c(-350, 250)
 earlyClassic <- c(250, 550)
 lateClassic <- c(550, 830)
 
-fileName <- here::here("analysis/figures/Fig5_maya_histograms_LATEST.pdf")
-
-K10 <-
-  maya_inference %>%
-  tidyr::unnest(hp) %>%
-  dplyr::filter(K == 10)
-
-out_all_K10 <- K10 %>%
-  dplyr::filter(dataset == "All Sites") %$%
-  output[[1]]
-
-K6 <-
-  maya_inference %>%
-  tidyr::unnest(hp) %>%
-  dplyr::filter(K == 6)
-
-out_all_K6 <- K6 %>%
-  dplyr::filter(dataset == "All Sites") %$%
-  output[[1]]
-
-out_tik_K10 <- K10 %>%
-  dplyr::filter(dataset == "Tikal") %$%
-  output[[1]]
+fileName <- here::here("Fig5_maya_histograms.pdf")
 
 pdf(fileName, width = 5, height = 8)
 
@@ -460,7 +383,17 @@ tpeak_all <- unlist(lapply(out_all_K10$anal$summList, function(s) {
 tpeak_tik <- unlist(lapply(out_tik_K10$anal$summList, function(s) {
   s$tpeak
 }))
-tpeakBreaks <- seq(495, 825, by = 5) # This could be automated
+
+get_hist_breaks <- function(v_all,v_tik,dv) {
+  # For the input All and Tikal data, create histogram breaks with the spacing
+  # dv.
+  vmin <- floor(min(v_all,v_tik)/dv)*dv
+  vmax <- ceiling(max(v_all,v_tik)/dv)*dv
+  vBreaks <- seq(vmin, vmax, by = dv)
+  return(vBreaks)
+}
+
+tpeakBreaks <- get_hist_breaks(tpeak_all,tpeak_tik,5)
 hist(tpeak_all, breaks = tpeakBreaks, xlab = "Year (AD) of Peak Population", ylab = "Density", main = NULL, col = rgb(1, 0, 0, .5), freq = F)
 hist(tpeak_tik, breaks = tpeakBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
 
@@ -470,7 +403,7 @@ TH_tik <- bd_extract_param(out_tik_K10$soln$fit)
 rate600_all <- bd_calc_gauss_mix_pdf_mat(TH_all, 600, taumin = out_all_K10$soln$prob$hp$taumin, taumax = out_all_K10$soln$prob$hp$taumax, type = "rate")
 rate600_tik <- bd_calc_gauss_mix_pdf_mat(TH_tik, 600, taumin = out_tik_K10$soln$prob$hp$taumin, taumax = out_tik_K10$soln$prob$hp$taumax, type = "rate")
 
-rateBreaks <- seq(-0.0010, 0.0370, by = 0.0005)
+rateBreaks <- get_hist_breaks(rate600_all,rate600_tik,0.0005)
 hist(rate600_all, rateBreaks, xlab = "Per annum growth rate in AD 600", ylab = "Density", main = NULL, col = rgb(1, 0, 0, .5), freq = F)
 hist(rate600_tik, rateBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
 
@@ -480,18 +413,18 @@ hist(rate600_tik, rateBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
 relDensEarlyLate_all <- bd_calc_relative_density(out_all_K10$soln, earlyClassic, lateClassic, anal = out_all_K10$anal)
 relDensEarlyLate_tik <- bd_calc_relative_density(out_tik_K10$soln, earlyClassic, lateClassic, anal = out_tik_K10$anal)
 relDensBreaks <- seq(0.05, 1.05, by = .025)
+relDensBreaks <- get_hist_breaks(relDensEarlyLate_all,relDensEarlyLate_tik,0.025)
 hist(relDensEarlyLate_all, relDensBreaks, xlab = "Ratio of Early to Late Classic Mean Population", ylab = "Density", main = NULL, col = rgb(1, 0, 0, .5), freq = F)
 hist(relDensEarlyLate_tik, relDensBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
 dev.off()
 
 ### FIGURE 2: Maya/Tikal comparison
-# Plot the All and Tikal reconstructions together using the K=6 results
-fileName <- here::here("analysis/figures/Fig2_maya_inference_K10_LATEST.pdf")
+# Plot the All and Tikal reconstructions together using the K=10 results
+fileName <- here::here("Fig2_maya_inference_K10.pdf")
 
 pdf(fileName, width = 10, height = 10)
 xat <- seq(-1000, 1800, 200)
 xlab <- xat
-# xlab[xlab == 0] <- "-1/1" # This is actually wrong
 
 par(
   mfrow = c(2, 1),
@@ -506,8 +439,10 @@ bd_make_blank_density_plot(out_all_K10$anal,
   xlim = c(-1100, 1900),
   ylim = c(0, 0.002)
 )
+bd_plot_summed_density(out_all_K10$anal,lwd = 3,add = T,col = "black")
 bd_plot_50_percent_quantile(out_all_K10$anal, add = T, lwd = 3, col = "red")
 bd_add_shaded_quantiles(out_all_K10$anal, col = adjustcolor("red", alpha.f = 0.25))
+
 # Plot 2 [Tikal]
 bd_make_blank_density_plot(out_tik_K10$anal,
   xlab = "",
@@ -515,14 +450,13 @@ bd_make_blank_density_plot(out_tik_K10$anal,
   xlim = c(-1100, 1900),
   ylim = c(0, 0.0035)
 )
+
+bd_plot_summed_density(out_tik_K10$anal,lwd = 3,add = T,col = "black")
 bd_plot_50_percent_quantile(out_tik_K10$anal, add = T, lwd = 3, col = "blue")
 bd_add_shaded_quantiles(out_tik_K10$anal, col = adjustcolor("blue", alpha.f = 0.25))
 axis(side = 1, at = xat, labels = xlab)
 mtext("Year (AD)", side = 1, line = 2.5)
 dev.off()
-
-
-
 
 ### FIGURE 4: Maya Rate Plot
 
@@ -567,7 +501,7 @@ make_tailored_rate_plot <- function(anal, taulo, tauhi, rrange, top = F, rat = N
 }
 
 # Plot the All and Tikal reconstructions together for rate
-fileName <- here::here("analysis/figures/Fig4_maya_inference_rate_K10_LATEST.pdf")
+fileName <- here::here("Fig4_maya_inference_rate_K10.pdf")
 
 pdf(fileName, width = 10, height = 10)
 # Restrict growth plot to -500 through 1500 ["AD"]
@@ -605,14 +539,6 @@ text(
 axis(side = 1, at = c(1, seq(200, 1400, 200)))
 mtext("Year (AD)", side = 1, line = 2.5)
 dev.off()
-
-
-
-
-
-
-
-
 
 ### FIGURE 3: Tikal Expert Comparison
 
@@ -680,7 +606,7 @@ expert_recons <-
     "Fry" = "Fry-centralTikal",
     "Santley" = "Santley-tikal"
   ) %>%
-  purrr::map(~ readxl::read_excel(here::here("analysis/data-raw/Tikal_Demography.xlsx"),
+  purrr::map(~ readxl::read_excel(here::here("Tikal_Demography.xlsx"),
     sheet = .x
   ))
 
@@ -740,7 +666,7 @@ expert_recons[c(
 
 
 # Make a plot comparing our reconstruction to previous expert reconstructions
-fileName <- here::here("analysis/figures/Fig3_tikal_prev_expert_comparison_LATEST.pdf")
+fileName <- here::here("Fig3_tikal_prev_expert_comparison.pdf")
 pdf(fileName, width = 6, height = 12)
 par(
   mfrow = c(5, 1),
@@ -795,38 +721,31 @@ expert_recons %>%
 mtext("Year (AD)", side = 1, line = 2.5)
 dev.off()
 
-fileName <- here::here("analysis/figures/FigS3_maya_inference_Kall_LATEST.pdf")
+fileName <- here::here("FigS3_maya_inference_Kall.pdf")
 
-pdf(fileName, width = 16, height = 20)
+pdf(fileName, width = 16, height = 5*length(Kvect))
 xat <- seq(-1000, 1800, 200)
 xlab <- xat
-# xlab[xlab == 0] <- "-1/1" # This is actually wrong
 
 par(
-  mfrow = c(4, 2)
-  #  mfrow = c(4, 2),
-  #  xaxs = "i", # No padding for x-axis
-  #  yaxs = "i", # No padding for y-axis
-  #  oma = c(4, 2, 2, 2),
-  #  mar = c(0, 4, 0, 0)
+  mfrow = c(length(Kvect), 2)
 )
 # Make four plots for All lowland sites
 sitesToPlot <- c("All Sites", "Tikal")
-KsToPlot <- seq(4, 10, by = 2)
-for (kk in 1:length(KsToPlot)) {
+counter <- 0
+for (kk in 1:length(Kvect)) {
   for (ss in 1:length(sitesToPlot)) {
     if (sitesToPlot[ss] == "All Sites") {
       plotCol <- "red"
+      # Subset of Maya data
+      maya_sub <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==Kvect[kk]  && length(x$prob$phi_m)==nrow(mesorad)})))]]
     } else {
       plotCol <- "blue"
+      # Subset of Maya data
+      maya_sub <- results[[which(unlist(lapply(results,function(x){x$prob$hp$K==Kvect[kk]  && length(x$prob$phi_m)==sum(mesorad$Site=='Tikal')})))]]
     }
-    plotTitle <- paste0(sitesToPlot[ss], " [K = ", KsToPlot[kk], "]")
-    maya_sub <-
-      maya_inference %>%
-      tidyr::unnest(hp) %>%
-      dplyr::filter(K == KsToPlot[kk]) %>%
-      dplyr::filter(dataset == sitesToPlot[ss]) %$%
-      output[[1]]
+    counter <- counter + 1
+    plotTitle <- paste0(sitesToPlot[ss], " [K = ", Kvect[kk], "]")
 
     bd_make_blank_density_plot(maya_sub$anal,
       xlab = "Calendar Date [AD]",
@@ -839,21 +758,9 @@ for (kk in 1:length(KsToPlot)) {
     bd_add_shaded_quantiles(maya_sub$anal, col = adjustcolor(plotCol, alpha.f = 0.25))
   }
 }
-# Plot 2 [Tikal]
-# bd_make_blank_density_plot(out_tik_K10$anal,
-#  xlab = "",
-#  xaxt = "n",
-#  xlim = c(-1100, 1900),
-#  ylim = c(0, 0.0035)
-# )
-# bd_plot_50_percent_quantile(out_tik_K10$anal, add = T, lwd = 3, col = "blue")
-# bd_add_shaded_quantiles(out_tik_K10$anal, col = adjustcolor("blue", alpha.f = 0.25))
-# axis(side = 1, at = xat, labels = xlab)
-# mtext("Year (BC/AD)", side = 1, line = 2.5)
 dev.off()
 
 
-# Check
 calc_quantile_dates <- function(M, tau, qlev = .5) {
   # This assumes tau is spaced at one year intervals
   dtau <- unique(diff(tau))
@@ -882,7 +789,7 @@ M <- bd_calc_meas_matrix(tau, mesorad$phi_m, mesorad$sig_m, calibDf, T, F)
 tau_0p5 <- calc_quantile_dates(M, tau, .5)
 
 
-fileName <- here::here("analysis/figures/FigS4_maya_inference_K10_with_rc_curve_LATEST.pdf")
+fileName <- here::here("FigS4_maya_inference_K2_and_K10_with_rc_curve.pdf")
 pdf(fileName, width = 10, height = 10)
 par(
   mfrow = c(2, 1),
@@ -892,10 +799,7 @@ par(
   oma = c(4, 2, 2, 2),
   # plot margins with ordering bottom, left, top, right:
   mar = c(2, 4, 0, 0)
-  # Don't add data if it falls outside plot window
-  # xpd = F
 )
-
 
 # (1) Calibration curve
 par(mar = c(0, 4, 0, 0))
@@ -904,11 +808,7 @@ box()
 
 par(mar = c(0, 4, 0, 0))
 hist(tau_0p5, breaks = seq(-1050, 1800, by = 50), xlab = "", ylab = "Density", main = NULL, yaxt = "n", freq = F, ylim = c(0, .002), xlim = c(-1100, 1900))
-# hist(tau_0p5,breaks=seq(-1050,1800,by=50),xlab = "",ylab = "Density",main=NULL,freq=F)
 
-# s1 <- 124
-# s2 <- 125
-# invSpan <- equiInfo$invSpanList[[s1]]
 t1_left <- equiInfo$invSpanList[[120]]$tau_right
 t1_right <- equiInfo$invSpanList[[121]]$tau_left
 t2_left <- equiInfo$invSpanList[[124]]$tau_right
@@ -925,25 +825,22 @@ rect(t1_left, 0.00050, t1_right, 0.0020, border = NA, col = adjustcolor("blue", 
 text((t1_left + t1_right) / 2, 0.00035, N1, cex = 1.5)
 rect(t2_left, 0.00070, t2_right, 0.0020, border = NA, col = adjustcolor("blue", alpha.f = .25))
 text((t2_left + t2_right) / 2, 0.00055, N2, cex = 1.5)
-# rect(invSpan$tau_left, 0.0005, invSpan$tau_right, 0.0020, border = NA, col = 'grey')
 
 bd_plot_50_percent_quantile(out_all_K10$anal, add = T, lwd = 3, col = "green")
 bd_add_shaded_quantiles(out_all_K10$anal, col = adjustcolor("green", alpha.f = 0.25))
 
-bd_plot_50_percent_quantile(out_all_K6$anal, add = T, lwd = 3, col = "red")
-bd_add_shaded_quantiles(out_all_K6$anal, col = adjustcolor("red", alpha.f = 0.25))
+bd_plot_50_percent_quantile(out_all_K2$anal, add = T, lwd = 3, col = "red")
+bd_add_shaded_quantiles(out_all_K2$anal, col = adjustcolor("red", alpha.f = 0.25))
 
 box()
-
 
 axis(
   side = 2,
   at = c(0, 0.0005, 0.0010, 0.0015)
 )
 
-
 axis(side = 1)
 mtext("Calendar Date [AD]", side = 1, line = 2.5, cex = 1.00)
 dev.off()
 
-write.csv(data.frame(names = c("N1", "span1", "density1", "N2", "span2", "density2"), values = c(N1, t1_right - t1_left, N1 / (t1_right - t1_left), N2, t2_right - t2_left, N2 / (t2_right - t2_left))), "logs/supp_count_data.csv")
+write.csv(data.frame(names = c("N1", "span1", "density1", "N2", "span2", "density2"), values = c(N1, t1_right - t1_left, N1 / (t1_right - t1_left), N2, t2_right - t2_left, N2 / (t2_right - t2_left))), "supp_count_data.csv")

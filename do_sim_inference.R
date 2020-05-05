@@ -99,7 +99,7 @@ sim_inference <-
 # (1) Generate the problem
 # (2) Do the Bayesian sampling
 # (3) Run some standard analyses
-out_file <- here::here("analysis/data-derived/sim_inference.rds")
+out_file <- here::here("sim_inference.rds")
 
 if (
   !file.exists(out_file) ||
@@ -187,22 +187,9 @@ if (
 
 # Load the data.
 sim_inference <-
-  "analysis/data-derived/sim_inference.rds" %>%
+  "sim_inference.rds" %>%
   here::here() %>%
   readr::read_rds()
-
-print("Key parameter values:")
-sim_inference %>%
-  purrr::map_dfr(function(x) {
-    x[c("n", "hp")] %>%
-      unlist(recursive = FALSE) %>%
-      tibble::as_tibble()
-  }) %>%
-  dplyr::arrange(n) %T>%
-  readr::write_csv(here::here("analysis/logs/sim_inference.csv"))
-
-
-
 
 #### Make Simulated Plots ####
 sim_inference %<>%
@@ -211,7 +198,7 @@ sim_inference %<>%
 
 nplots <- length(sim_inference) + 1
 # Generate a 4 x 1 graph figure summarizing the simulation results
-pdf(here::here("analysis/figures/Fig1_sim_inference.pdf"), width = 5, height = 2.5 * nplots)
+pdf(here::here("Fig1_sim_inference.pdf"), width = 5, height = 2.5 * nplots)
 
 par(
   mfrow = c(nplots, 1),

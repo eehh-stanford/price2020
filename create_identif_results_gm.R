@@ -7,7 +7,7 @@ library(doParallel)
 library(foreach)
 registerDoParallel(detectCores())
 
-source("analysis/bayesian_radiocarbon_functions.R")
+source("bayesian_radiocarbon_functions.R")
 
 set.seed(75372) # from random.org between 1 and 1,000,000
 
@@ -89,7 +89,7 @@ invSpanList <- equifData$invSpanList
 phiMinPlot <- 0
 phiMaxPlot <- 0.08
 col_vector <- mapply(brewer.pal, S, "Set1")
-pdf("figures/FigS2_gm_example.pdf", width = 20, height = 12)
+pdf("FigS2_gm_example.pdf", width = 20, height = 12)
 par(mfrow = c(3, 1))
 
 bd_vis_calib_curve(taumin, taumax, calibDf, xlab = "Calendar Date [AD]", ylab = "Fraction Modern", invertCol = "gray80")
