@@ -49,16 +49,15 @@ This also installs Rstan, which may have further depenencies. If so, see:
 Contents
 --------
 
-Input data files:
-  MesoRAD-v.1.1\_FINAL\_no\_locations.xlsx
-  Tikal\_Demography.xlsx
-
-R files:
-  bayesian\_radiocarbon\_functions.R
-  create\_identif\_results\_exp.R
-  create\_identif\_results\_gm.R
-  do\_maya\_inference.R
-  do\_sim\_inference.R
+-   Input data files:
+    -   MesoRAD-v.1.1\_FINAL\_no\_locations.xlsx
+    -   Tikal\_Demography.xlsx
+-   R files:
+    -   bayesian\_radiocarbon\_functions.R
+    -   create\_identif\_results\_exp.R
+    -   create\_identif\_results\_gm.R
+    -   do\_maya\_inference.R
+    -   do\_sim\_inference.R
 
 The remaining files are for the README and R package.
 
@@ -75,8 +74,9 @@ source('do_sim_inference.R')
 ```
 
 This should take a few hours to finish. Once complete, the following new files are created:
-  sim\_inference.rds
-  Fig1\_sim\_inference.pdf
+
+-   sim\_inference.rds
+-   Fig1\_sim\_inference.pdf
 
 sim\_inference.rds stores the results of the Bayesian inference for N=10, 100, 1000,and 10000 simulated radiocarbon samples and two choices for the paramaterization of the prior (a total of eight cases). Fig1\_sim\_inference.pdf is Figure 1 in the article.
 
@@ -90,28 +90,32 @@ source('do_maya_inference.R')
 ```
 
 This should take about two days to finish. Once complete, the following new files are created:
-  log\_mesorad\_hygiene\_counts.csv
-  mesorad\_filtered.csv
-  log\_mesorad\_filtered\_site\_counts.csv
-  mesorad\_combined.csv
-  mesorad\_final.csv
-  maya\_inference\_K2\_tik.rds
-  maya\_inference\_K4\_tik.rds
-  maya\_inference\_K6\_tik.rds
-  maya\_inference\_K8\_tik.rds
-  maya\_inference\_K10\_tik.rds
-  maya\_inference\_K2\_all.rds
-  maya\_inference\_K4\_all.rds
-  maya\_inference\_K6\_all.rds
-  maya\_inference\_K8\_all.rds
-  maya\_inference\_K10\_all.rds
-  Fig2\_maya\_inference\_K10.pdf
-  Fig3\_tikal\_prev\_expert\_comparison.pdf
-  Fig4\_maya\_inference\_rate\_K10.pdf
-  Fig5\_maya\_histograms.pdf
-  FigS3\_maya\_inference\_Kall.pdf
-  FigS4\_maya\_inference\_K2\_and\_K10\_with\_rc\_curve.pdf
-  supp\_count\_data.csv
+
+-   Mesorad files
+    -   log\_mesorad\_hygiene\_counts.csv
+    -   mesorad\_filtered.csv
+    -   log\_mesorad\_filtered\_site\_counts.csv
+    -   mesorad\_combined.csv
+    -   mesorad\_final.csv
+-   Inference results
+    -   maya\_inference\_K2\_tik.rds
+    -   maya\_inference\_K4\_tik.rds
+    -   maya\_inference\_K6\_tik.rds
+    -   maya\_inference\_K8\_tik.rds
+    -   maya\_inference\_K10\_tik.rds
+    -   maya\_inference\_K2\_all.rds
+    -   maya\_inference\_K4\_all.rds
+    -   maya\_inference\_K6\_all.rds
+    -   maya\_inference\_K8\_all.rds
+    -   maya\_inference\_K10\_all.rds
+-   Figures and count data
+    -   Fig2\_maya\_inference\_K10.pdf
+    -   Fig3\_tikal\_prev\_expert\_comparison.pdf
+    -   Fig4\_maya\_inference\_rate\_K10.pdf
+    -   Fig5\_maya\_histograms.pdf
+    -   FigS3\_maya\_inference\_Kall.pdf
+    -   FigS4\_maya\_inference\_K2\_and\_K10\_with\_rc\_curve.pdf
+    -   supp\_count\_data.csv
 
 The first set of files provides the Mesorad data at various stages of processing. The second set of files (maya\_inference\_K) provides the inference results for Tikal/All sites with K=2 to 10 numbers of mixtures components. The third set of files is the figures and count data for the main manuscript and supplement.
 
@@ -125,8 +129,9 @@ source('create_identif_results_exp.R')
 ```
 
 This should take only a few minutes to run. Once complete, the following new files are created:
-  FigS1\_exp\_example.pdf
-  SuppB\_exp.csv
+
+-   FigS1\_exp\_example.pdf
+-   SuppB\_exp.csv
 
 FigS1\_exp\_example.pdf is Figure S1 in the supplement. SuppB\_exp.csv provides summary information for the example, notably the mean measurement uncertainties reported in the supplement.
 
@@ -137,7 +142,8 @@ source('create_identif_results_gm.R')
 ```
 
 This will take a few hours to run. Once complete, the following new file is created:
-  FigS2\_gm\_example.pdf
+
+-   FigS2\_gm\_example.pdf
 
 FigS1\_exp\_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
 
