@@ -8,12 +8,12 @@ This repository contains the data and code for our paper:
 > Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. In review.
 
 <!-- Our pre-print is online here: -->
-<!-- > Authors, (YYYY). _End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography_. Name of journal/book, Accessed 05 May 2020. Online at <https://doi.org/xxx/xxx> -->
+<!-- > Authors, (YYYY). _End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography_. Name of journal/book, Accessed 03 Jun 2020. Online at <https://doi.org/xxx/xxx> -->
 ### How to cite
 
 Please cite this compendium as:
 
-> Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *Compendium of R code and data for End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. Accessed 05 May 2020.
+> Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *Compendium of R code and data for End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. Accessed 03 Jun 2020.
 
 Getting the code and input data
 -------------------------------
@@ -145,7 +145,7 @@ This will take a few hours to run. Once complete, the following new file is crea
 
 -   FigS2\_gm\_example.pdf
 
-FigS1\_exp\_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
+FigS2\_exp\_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
 
 ### Licenses
 

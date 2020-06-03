@@ -156,7 +156,7 @@ This will take a few hours to run. Once complete, the following new file is crea
 
 * FigS2_gm_example.pdf  
 
-FigS1_exp_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
+FigS2_exp_example.pdf is Figure S2 in the supplement. Information about the identifiability checks is printed out in R as the script runs.
 
 ### Licenses
 
