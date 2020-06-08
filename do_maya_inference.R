@@ -211,7 +211,7 @@ runlog$`Tikal Sample Size` <- mesorad %>%
 mesorad %<>%
   dplyr::mutate(
     phi_m = exp(-`Age BP` / 8033),
-    sig_m = `Error` * exp(-`Error` / 8033) / 8033
+    sig_m = `Error` * phi_m / 8033
   )
 
 # Doing inference involves three steps:
