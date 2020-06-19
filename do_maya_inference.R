@@ -791,7 +791,7 @@ calc_quantile_dates <- function(M, tau, qlev = .5) {
   for (n in 1:nrow(M)) {
     fv <- M[n, ] / sum(M[n, ])
     Fv <- cumsum(fv)
-    m <- which(Fv >= qlev)[1] # First over 1%
+    m <- which(Fv >= qlev)[1] # First over qlev
     tau1[n] <- tau[m - 1] + (qlev - Fv[m - 1]) / (Fv[m] - Fv[m - 1])
   }
   return(tau1)
@@ -836,16 +836,17 @@ ind1 <- (phi1_left <= mesorad$phi_m) & (mesorad$phi_m <= phi1_right)
 ind2 <- (phi2_left <= mesorad$phi_m) & (mesorad$phi_m <= phi2_right)
 N1 <- sum(ind1)
 N2 <- sum(ind2)
-rect(t1_left, 0.00050, t1_right, 0.0020, border = NA, col = adjustcolor("blue", alpha.f = .25))
-text((t1_left + t1_right) / 2, 0.00035, N1, cex = 1.5)
-rect(t2_left, 0.00070, t2_right, 0.0020, border = NA, col = adjustcolor("blue", alpha.f = .25))
-text((t2_left + t2_right) / 2, 0.00055, N2, cex = 1.5)
 
 bd_plot_50_percent_quantile(out_all_K10$anal, add = T, lwd = 3, col = "green")
 bd_add_shaded_quantiles(out_all_K10$anal, col = adjustcolor("green", alpha.f = 0.25))
 
 bd_plot_50_percent_quantile(out_all_K2$anal, add = T, lwd = 3, col = "red")
 bd_add_shaded_quantiles(out_all_K2$anal, col = adjustcolor("red", alpha.f = 0.25))
+
+rect(t1_left, 0.00050, t1_right, 0.0020, border = NA, col = adjustcolor("blue", alpha.f = .25))
+text((t1_left + t1_right) / 2, 0.00035, N1, cex = 1.5)
+rect(t2_left, 0.00070, t2_right, 0.0020, border = NA, col = adjustcolor("blue", alpha.f = .25))
+text((t2_left + t2_right) / 2, 0.00055, N2, cex = 1.5)
 
 box()
 
