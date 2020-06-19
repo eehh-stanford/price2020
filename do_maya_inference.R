@@ -393,13 +393,28 @@ get_hist_breaks <- function(v_all,v_tik,dv) {
   return(vBreaks)
 }
 
-tpeakBreaks <- get_hist_breaks(tpeak_all,tpeak_tik,5)
-hist(tpeak_all, breaks = tpeakBreaks, xlab = "Year (AD) of Peak Population", ylab = "Density", main = NULL, col = rgb(1, 0, 0, .5), freq = F)
-hist(tpeak_tik, breaks = tpeakBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
 
-# (2) Growth rate in 600 AD histogram
+# For Tikal, there is exaxtly one sample for which the peak calendar date is
+# ~AD 48 and for which there is a sharp, earlier peak and broader, later peak
+# with a slightly higher value of the density for the sharp, earlier peak. In
+# addition, there are three samples with peaks in the late AD 500s. To improve
+# interpretability of the histogram (by showing it on a smaller timespan) these
+# four samples are placed in a single bin between AD 595 and 600, and the fact
+# this is done is noted in the graph.
 TH_all <- bd_extract_param(out_all_K10$soln$fit)
 TH_tik <- bd_extract_param(out_tik_K10$soln$fit)
+
+# Create a modified vector with the samples below 600 set to 597.5
+tpeak_cutoff <- 600
+tpeak_tik_modified <- tpeak_tik
+tpeak_tik_modified[tpeak_tik_modified < tpeak_cutoff] <- tpeak_cutoff - 2.5
+
+tpeakBreaks <- get_hist_breaks(tpeak_all,tpeak_tik_modified,5)
+hist(tpeak_all, breaks = tpeakBreaks, xlab = "Year (AD) of Peak Population", ylab = "Density", main = NULL, col = rgb(1, 0, 0, .5), freq = F)
+hist(tpeak_tik_modified, breaks = tpeakBreaks, col = rgb(0, 0, 1, .5), add = T, freq = F)
+text(598.5,0.0075,paste0("< AD ",tpeak_cutoff),srt=90,cex=.85)
+
+# (2) Growth rate in 600 AD histogram
 rate600_all <- bd_calc_gauss_mix_pdf_mat(TH_all, 600, taumin = out_all_K10$soln$prob$hp$taumin, taumax = out_all_K10$soln$prob$hp$taumax, type = "rate")
 rate600_tik <- bd_calc_gauss_mix_pdf_mat(TH_tik, 600, taumin = out_tik_K10$soln$prob$hp$taumin, taumax = out_tik_K10$soln$prob$hp$taumax, type = "rate")
 
