@@ -64,6 +64,8 @@ This also installs Rstan, which may have further depenencies. If so, see:
 
 [https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started)
 
+Some detailes on the package/version dependencies, imports, and suggestions are available in the package DESCRIPTION file.
+
 ## Contents
 
 * Input data files:

@@ -8,12 +8,12 @@ This repository contains the data and code for our paper:
 > Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. In review.
 
 <!-- Our pre-print is online here: -->
-<!-- > Authors, (YYYY). _End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography_. Name of journal/book, Accessed 03 Jun 2020. Online at <https://doi.org/xxx/xxx> -->
+<!-- > Authors, (YYYY). _End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography_. Name of journal/book, Accessed 21 Jun 2020. Online at <https://doi.org/xxx/xxx> -->
 ### How to cite
 
 Please cite this compendium as:
 
-> Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *Compendium of R code and data for End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. Accessed 03 Jun 2020.
+> Price, M.H., J.M. Capriles, J. Hoggarth, R.K. Bocinsky, C.E. Ebert, and J.H. Jones, (2020). *Compendium of R code and data for End-to-end Bayesian analysis of radiocarbon dates reveals new insights into lowland Maya demography*. Accessed 21 Jun 2020.
 
 Getting the code and input data
 -------------------------------
@@ -45,6 +45,8 @@ Among other things, this installs the following package:
 This also installs Rstan, which may have further depenencies. If so, see:
 
 <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>
+
+Some detailes on the package/version dependencies, imports, and suggestions are available in the package DESCRIPTION file.
 
 Contents
 --------
